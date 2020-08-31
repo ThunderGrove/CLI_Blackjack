@@ -3,7 +3,6 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Scanner;
 import java.util.concurrent.Executors;
@@ -11,10 +10,10 @@ import java.util.concurrent.Executors;
 public class Server {
     public static void main(String[] args) throws Exception {
         try (var listener = new ServerSocket(8000)) {
-            System.out.println("Tic Tac Toe Server is Running...");
-            var pool = Executors.newFixedThreadPool(200);
-            while (true) {
-                Game game = new Game();
+            System.out.println("Broken blackjack");
+            var pool=Executors.newFixedThreadPool(200);
+            while(true){
+                Game game=new Game();
                 pool.execute(game.new Player(listener.accept()));
                 pool.execute(game.new Player(listener.accept()));
             }
@@ -84,7 +83,7 @@ class Game{
             "Klør konge"
     };
 
-    private Player[] board = new Player[2];
+    private Player[] board=new Player[2];
 
     Player currentPlayer;
 
@@ -93,33 +92,6 @@ class Game{
             deck.add(i);
         }
         Collections.shuffle(deck);
-    }
-
-    public boolean hasWinner() {
-        return (board[0] != null && board[0] == board[1] && board[0] == board[2])
-                || (board[3] != null && board[3] == board[4] && board[3] == board[5])
-                || (board[6] != null && board[6] == board[7] && board[6] == board[8])
-                || (board[0] != null && board[0] == board[3] && board[0] == board[6])
-                || (board[1] != null && board[1] == board[4] && board[1] == board[7])
-                || (board[2] != null && board[2] == board[5] && board[2] == board[8])
-                || (board[0] != null && board[0] == board[4] && board[0] == board[8])
-                || (board[2] != null && board[2] == board[4] && board[2] == board[6]);
-    }
-
-    public boolean boardFilledUp() {
-        return Arrays.stream(board).allMatch(p -> p != null);
-    }
-
-    public synchronized void move(int location, Player player) {
-        if (player != currentPlayer) {
-            throw new IllegalStateException("Not your turn");
-        } else if (player.opponent == null) {
-            throw new IllegalStateException("You don't have an opponent yet");
-        } else if (board[location] != null) {
-            throw new IllegalStateException("Cell already occupied");
-        }
-        board[location] = currentPlayer;
-        currentPlayer = currentPlayer.opponent;
     }
 
     class Player implements Runnable{
@@ -137,6 +109,7 @@ class Game{
         public void run(){
             try{
                 setup();
+                output.println("TEST");
                 processCommands();
             }catch(Exception e){
                 e.printStackTrace();
@@ -146,52 +119,39 @@ class Game{
                 }
                 try{
                     socket.close();
-                }catch (IOException e){
+                }catch(IOException e){
                 }
             }
         }
 
-        private void setup() throws IOException{
-            input = new Scanner(socket.getInputStream());
-            output = new PrintWriter(socket.getOutputStream(), true);
-            output.println("WELCOME");
+        private void setup()throws IOException{
+            input=new Scanner(socket.getInputStream());
+            output=new PrintWriter(socket.getOutputStream(), true);
+            System.out.println("Player connecting and adding first card to hand");
             hand.add(Game.this.deck.get(topCardIndex));
             topCardIndex++;
+            System.out.println(cardNames[hand.get(0)]);
         }
 
         private void processCommands(){
+            System.out.println("Waiting for input");
             while(input.hasNextLine()){
+                System.out.println("Input received");
                 var command=input.nextLine();
-                if(command.startsWith("EXIT")) {
+                if(command.startsWith("EXIT")){
                     return;
                 }else if(command.startsWith("STAND")){
 
                 }else if(command.startsWith("HIT")){
                     hand.add(Game.this.deck.get(topCardIndex));
                     topCardIndex++;
+                    System.out.println(hand.get(0));
                 }
             }
         }
 
         private void processHandValue(){
 
-        }
-
-        private void processMoveCommand(int location) {
-            try {
-                move(location, this);
-                output.println("VALID_MOVE");
-                opponent.output.println("OPPONENT_MOVED " + location);
-                if (hasWinner()) {
-                    output.println("VICTORY");
-                    opponent.output.println("DEFEAT");
-                } else if (boardFilledUp()) {
-                    output.println("TIE");
-                    opponent.output.println("TIE");
-                }
-            } catch (IllegalStateException e) {
-                output.println("MESSAGE " + e.getMessage());
-            }
         }
     }
 }
